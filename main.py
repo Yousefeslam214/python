@@ -66,7 +66,7 @@ print(add_numbers(5, 10))  # calling the function with arguments
 
 
 # variable scope
-print(result)
+# print(result)
 
 
 
@@ -83,3 +83,87 @@ import random
 
 
 print("Random integer:", random.randint(1, 10))  # random integer between 1 and 10
+
+
+
+
+
+
+
+
+# if
+
+if True:
+    print("true")
+else:
+    print("false")
+
+if 10 > 5:
+    print("10 is greater than 5")
+    
+    
+# nested if
+
+if True:
+    print("True")
+    if True:
+        print("True")
+        
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# while
+
+counter = 0
+
+while counter < 3 :
+    print("counter:", counter)
+    counter += 1
+
+
+
+
+
+
+
+for item in range(5):
+    print(item)
+
+    
