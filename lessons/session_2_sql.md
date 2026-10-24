@@ -2,7 +2,7 @@
 
 **Goal:** understand how business data is stored, and answer business questions with `SELECT`, `WHERE`, `JOIN` and `GROUP BY`.
 
-**Time:** about 90 minutes · **Tool:** DB Browser for SQLite (free)
+**Time:** about 70 minutes · **Tool:** DB Browser for SQLite (free)
 
 ---
 
@@ -197,7 +197,48 @@ Read the error like a Python traceback, fix **one** thing, and run again.
 
 ---
 
-## 10. Practice
+## 10. SQL vs NoSQL
+
+Not every database uses tables. There are two big families.
+
+**SQL:** the data is split into tables and linked by ids, like our practice database.
+
+| orders.id | customer_id | product | amount | paid |
+|---|---|---|---|---|
+| 2 | 2 | Monitor | 1200 | 0 |
+
+`customer_id = 2` points to the `customers` table: Sara, Alexandria.
+
+**NoSQL (documents):** everything about the order is saved together, as JSON.
+
+```json
+{
+  "id": 2,
+  "customer": {"name": "Sara", "city": "Alexandria"},
+  "product": "Monitor",
+  "amount": 1200,
+  "paid": false
+}
+```
+
+| | SQL | NoSQL |
+|---|---|---|
+| **Shape** | Tables with fixed columns | Flexible documents, like JSON or Python dictionaries |
+| **Links** | `JOIN` on ids | Related data is often saved inside the document |
+| **Examples** | SQLite, PostgreSQL, MySQL | MongoDB, Firebase, Redis |
+| **Good for** | Money, orders, invoices, reports | Data that changes shape: chat messages, logs, app events |
+
+> **Rule of thumb:** start with SQL (PostgreSQL) unless you have a clear reason not to. Odoo uses PostgreSQL.
+>
+> **Link to Part A:** the `orders` list in `main.py` and the JSON in `lesson_3_toolkit.py` (section 5) already look like NoSQL documents.
+
+> **Coming in Session 3:** in Django you write `Post.objects.filter(status="draft")`, and Django runs `SELECT … WHERE status = 'draft'` for you.
+>
+> **Coming in Session 5:** a third kind, the **vector database**, finds text by meaning. AI uses it to search your documents.
+
+---
+
+## 11. Practice
 
 Try each question first, then click **Answer** to check.
 
@@ -284,11 +325,92 @@ LIMIT 1;
 Mona, with 1600.
 </details>
 
-### Homework
+---
 
-1. Write **3 business questions** of your own. Answer *what, where, how* for each, then write the SQL.
-2. Make one SQL error on purpose. Explain the message in your own words.
-3. Save your queries in `my_queries.sql` and **commit** it (Session 1).
+## 12. Mini-project: Order report
+
+Use Part A (Python) and Part B (SQL) together. **Commit after each step.**
+
+**Step 1. Make your own projects repo (only once)**
+
+1. Make a new folder called `my-projects` and open it in VS Code (**File → Open Folder**).
+2. In **Source Control**, click **Initialize Repository**.
+3. After your first commit, click **Publish Branch** and choose **private**.
+
+Every mini-project gets its own folder in this repo. Make the first one: `s2-order-report`.
+
+**Step 2. Python: `report.py`**
+
+1. Copy `output/orders.csv` (made by `lesson_3_toolkit.py`) into `s2-order-report`.
+2. In `report.py`, read the CSV and write 2 functions that **return** their answer:
+   - `total_sales(orders)`: the total of all amounts
+   - `unpaid_by_customer(orders)`: a dictionary like `{"Sara": 1200, "Ahmed": 300}`
+3. Save both answers in `report.json`.
+
+> **Hints:** CSV gives back text, so use `int(row["amount"])`. `paid` is the text `"True"` or `"False"`, so compare with `row["paid"] == "False"`. Start with `result = {}`. If the customer is already in it, add to their amount. If not, set it.
+
+**Step 3. SQL: `my_queries.sql`**
+
+1. Write **3 business questions** of your own. Answer *what, where, how* for each (section 7), then write the SQL.
+2. Make one SQL error on purpose. Explain the message in your own words in a `--` comment.
+
+**Step 4. Use AI as a tutor**
+
+Paste one error message into Claude and ask: *"Explain this error in simple words. Don't fix my code."* Then fix it yourself.
+
+**Teacher checklist (next session):** ☐ `report.json` has the right totals ☐ both functions use `return` ☐ 3 SQL questions answered ☐ at least 3 small commits with clear messages
+
+---
+
+## 13. Quick check
+
+Answer in your own words first, then click **Answer**.
+
+**1. What is the difference between `print` and `return` in a function?**
+
+<details><summary>Answer</summary>
+
+`print` shows a value on the screen. `return` gives the value back to the code that called the function, so you can save it in a variable and use it again. A function without `return` gives back `None`.
+</details>
+
+**2. What does `from shop_tools import format_egp` do?**
+
+<details><summary>Answer</summary>
+
+It opens the module `shop_tools.py` and takes the function `format_egp` from it, so you can use it in your file.
+</details>
+
+**3. How do you get `"Alexandria"` from this data?**
+
+```python
+data = {"customer": {"name": "Sara", "city": "Alexandria"}}
+```
+
+<details><summary>Answer</summary>
+
+`data["customer"]["city"]`: first the key `"customer"`, then the key `"city"`.
+</details>
+
+**4. What is the difference between a class and an object?**
+
+<details><summary>Answer</summary>
+
+A class is a template, like an empty form: `Order`. An object is one filled-in copy: `order_1 = Order("Ahmed", 500, True)`. In Django (Session 3), the class is the table and each object is one row.
+</details>
+
+**5. SQL: how much unpaid money is there in each city?**
+
+<details><summary>Answer</summary>
+
+```sql
+SELECT customers.city, SUM(orders.amount) AS unpaid
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+WHERE orders.paid = 0
+GROUP BY customers.city;
+```
+Alexandria 1200, Cairo 1000.
+</details>
 
 ---
 
