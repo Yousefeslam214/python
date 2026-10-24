@@ -1,0 +1,3 @@
+# Files Git should not save. More about .gitignore in Session 4.
+db.sqlite3
+__pycache__/
