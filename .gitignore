@@ -1,0 +1,24 @@
+# Editor settings
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+
+# Secrets
+.env
+.env.*
+
+# Django
+db.sqlite3
+
+# Files made by running the lessons
+output/
+
+# OS
+.DS_Store
+Thumbs.db
