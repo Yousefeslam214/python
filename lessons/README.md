@@ -21,8 +21,8 @@
 | # | Part A | Part B | Mini-project |
 |---|---|---|---|
 | 1 ✔ | Python basics ([`main.py`](../main.py)) | Git + GitHub ([guide](session_1_git_github.md)) | — |
-| 2 | Python toolkit ([`lesson_3_toolkit.py`](../lesson_3_toolkit.py)) | SQL + SQL vs NoSQL ([guide](session_2_sql.md)) | Order report |
-| 3 | Django overview | Product thinking, prompting, specs | Request-flow map + a product spec |
+| 2 | Python toolkit ([`lesson_3_toolkit.py`](../lesson_3_toolkit.py)) | SQL + performance & security + SQL vs NoSQL ([guide](session_2_sql.md)) | Order report |
+| 3 | Django overview ([guide](session_3_django_overview.md) · [demo](../demo_django/)) | Product thinking, prompting, specs ([guide](session_3_product_prompting.md)) | Request-flow map + a product spec |
 | 4 | React overview | Claude Code builds your spec | Data trace + your feature, built with AI |
 | 5 | AI inside the app (Claude API) | Extending AI: MCP, RAG, local AI | One AI feature |
 | 6 | Automation with code: schedule, LinkedIn, deploy | Automation with n8n | Auto-publish + runbook |
@@ -41,7 +41,7 @@
 - **You learn:** what a framework is, how a web request travels, models = tables, the admin, JSON APIs · problem → MVP → spec, and how to prompt AI well
 - **Mini-project:** map one page's request flow, write a 1-page product spec, improve one prompt
 - **Before this session:** `pip install` works on your laptop (Session 2)
-- **Go deeper:** [roadmap.sh/django](https://roadmap.sh/django) · [roadmap.sh/product-manager](https://roadmap.sh/product-manager) · [roadmap.sh/ai-agents](https://roadmap.sh/ai-agents) (the prompting part)
+- **Go deeper:** [roadmap.sh/django](https://roadmap.sh/django) · [roadmap.sh/product-manager](https://roadmap.sh/product-manager) · [roadmap.sh/ai-agents](https://roadmap.sh/ai-agents) (the prompting part) · book: *Prompt Engineering 2.0* (Youssef Hosni), chapters 3 and 5 ([code](https://github.com/youssefHosni/prompt-engineering-book-2e))
 
 ### Session 4: React overview + Claude Code
 - **You learn:** frontend vs backend, components, props, state, how React gets data from Django, AI app builders · Claude Code: CLAUDE.md, plan mode, reviewing diffs, tests, keeping secrets in `.env`
@@ -53,13 +53,13 @@
 - **You learn:** the Claude API, JSON answers, tool calling, agents and evals (testing AI answers), security · MCP (tools for AI), RAG (AI + your documents), local AI with Hermes
 - **Mini-project:** one AI feature with 3 test cases, its cost, and a cloud-vs-local note
 - **Before this session:** an Anthropic API key with a spending limit · Hermes + a local model (a big download, so start early)
-- **Go deeper:** [roadmap.sh/ai-agents](https://roadmap.sh/ai-agents)
+- **Go deeper:** [roadmap.sh/ai-agents](https://roadmap.sh/ai-agents) · book: *Prompt Engineering 2.0*, chapters 8, 9, 14 and 15 (JSON output, tools, agents, testing, security)
 
 ### Session 6: Automate and ship
 - **You learn:** scheduled jobs, logs, a kill switch · OAuth and the LinkedIn API · where automation runs, and deployment · n8n workflows with an approval step · AI that runs on a schedule
 - **Mini-project:** auto-publish to LinkedIn (dry-run first, then one real post) + a runbook
 - **Before this session:** a LinkedIn Page + developer app (start after Session 3, because approval can take time) · n8n · a Telegram bot
-- **Go deeper:** [roadmap.sh/claude-code](https://roadmap.sh/claude-code) · [roadmap.sh/ai-product-builder](https://roadmap.sh/ai-product-builder)
+- **Go deeper:** [roadmap.sh/claude-code](https://roadmap.sh/claude-code) · [roadmap.sh/ai-product-builder](https://roadmap.sh/ai-product-builder) · book: *Prompt Engineering 2.0*, chapters 10–13 (skills, and loops that run on a schedule)
 
 ### Session 7: Capstone + growth
 - **You do:** the final project on a starter app (steps 1–4 at home, steps 5–9 in class)
