@@ -2,7 +2,7 @@
 
 **Goal:** understand how business data is stored, and answer business questions with `SELECT`, `WHERE`, `JOIN` and `GROUP BY`.
 
-**Time:** about 70 minutes, plus 15 for the quick topics (or do them at home) · **Tool:** DB Browser for SQLite (free)
+**Time:** about 70 minutes, plus 15 for the quick topics and 15 for performance and security (or do them at home) · **Tool:** DB Browser for SQLite (free)
 
 ---
 
@@ -285,12 +285,6 @@ WHERE orders.id IS NULL;
 
 **Khaled.** `JOIN` keeps only the matches. `LEFT JOIN` keeps every customer and leaves the order empty (`NULL`) when there is none. Business use: a list of customers to call.
 
-> **Big tables (like Odoo's): keep queries fast**
-> - Ask only for the columns you need, not `*`.
-> - Add `LIMIT 20` while you explore.
-> - Filter with `WHERE`, so you get back only the rows you need.
-> - Searching by `id` is fast: the primary key has an **index**, like the index at the back of a book.
-
 ---
 
 ## 9. Common errors
@@ -307,15 +301,143 @@ Read the error like a Python traceback, fix **one** thing, and run again.
 
 ---
 
-## 10. Safety
+## 10. Performance: fast queries on big tables
 
-- `SELECT` only **reads** data. It is always safe.
-- `UPDATE` and `DELETE` **change** data. `DELETE FROM orders;` deletes **every** order.
-- With **real company data (Odoo)**: practice on a copy, use read-only access, and never change data without review and a backup.
+Our shop has 7 orders. A real shop (or Odoo) can have **millions**. A slow query means a manager waits for a report, or a web page loads slowly.
+
+### Index: like the index at the back of a book
+
+To find "JOIN" in a book, you don't read every page. You look it up in the index at the back and go straight to the page. A database **index** does the same for one column.
+
+| Without an index | With an index |
+|---|---|
+| **SCAN**: reads every row, from the first to the last | **SEARCH**: jumps straight to the matching rows |
+| Fine for 7 rows, slow for 7 million | Fast for any size |
+
+The primary key (`id`) gets an index automatically. Other columns don't.
+
+**Try it:** `EXPLAIN QUERY PLAN` shows **how** the database will find the rows, without running the query.
+
+```sql
+EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 2;
+```
+
+The `detail` column says **`SCAN orders`**: it reads all 7 orders to find Sara's 2. Now add an index and ask again:
+
+```sql
+CREATE INDEX idx_orders_customer ON orders (customer_id);
+
+EXPLAIN QUERY PLAN SELECT * FROM orders WHERE customer_id = 2;
+```
+
+Now it says **`SEARCH orders USING INDEX idx_orders_customer (customer_id=?)`**. Same answer, but no reading every row.
+
+- **Which columns need an index?** The ones you often use in `WHERE`, `JOIN … ON` or `ORDER BY`: `customer_id`, `order_date`.
+- **Don't index every column.** Each index takes disk space, and every `INSERT` and `UPDATE` must update it too, so saving gets a little slower. Small tables don't need one.
+
+### Keys: link with number ids, not text
+
+We link an order to its customer with `customer_id = 2`, not with the name `'Sara'`. Why?
+
+| Key | Good or bad? |
+|---|---|
+| A name (text): `'Ahmed'` | ✗ Two customers can have the same name. Names change. Long text is slower to compare. |
+| A number id: `1` | ✓ Unique, never changes, small and fast |
+
+The primary key also **protects** the data. Try to add a second customer with id 1:
+
+```sql
+INSERT INTO customers (id, name, city) VALUES (1, 'Hassan', 'Tanta');
+```
+
+Error: **`UNIQUE constraint failed: customers.id`**. The database refuses, so two customers can never share one id.
+
+### 5 habits for fast queries
+
+| Habit | Slow | Fast |
+|---|---|---|
+| Ask only for the columns you need | `SELECT *` | `SELECT name, city` |
+| Add `LIMIT` while you explore | all the rows | `LIMIT 20` |
+| Let the database do the math | load every row into Python, then add | `SELECT SUM(amount) … WHERE paid = 0` |
+| Don't put the column inside a function | `WHERE substr(order_date, 1, 7) = '2026-09'` | `WHERE order_date BETWEEN '2026-09-01' AND '2026-09-30'` |
+| Don't start a search with `%` | `WHERE product LIKE '%top'` | `WHERE product = 'Laptop'` |
+
+The last 2 habits matter for indexed columns: a function around the column, or a `%` at the start, stops the database from using the index, so it reads every row again.
+
+> **Coming in Session 3:** Django makes an index for every `ForeignKey` for you, and `db_index=True` adds one to any other field.
 
 ---
 
-## 11. SQL vs NoSQL
+## 11. Security: protect the data
+
+### Reading vs changing
+
+- `SELECT` only **reads** data. It is always safe.
+- `UPDATE` and `DELETE` **change** data. `DELETE FROM orders;` deletes **every** order.
+- **Check before you change:** run a `SELECT` with the same `WHERE` first. If the rows are right, change only the first part.
+
+```sql
+SELECT * FROM orders WHERE id = 3;          -- 1. check: is this the right order?
+UPDATE orders SET paid = 1 WHERE id = 3;    -- 2. then change it
+```
+
+Try it, then click **Revert Changes** (next to **Write Changes**). DB Browser saves nothing until you click **Write Changes**, so Revert brings back order 3 as unpaid and the answers in section 13 stay right.
+
+### SQL injection: never build SQL from the user's text
+
+A program often puts the user's text into a query. If you glue the text into the SQL, the user can change the SQL itself.
+
+```python
+import sqlite3
+
+db = sqlite3.connect("practice.db")
+name = input("Customer name: ")
+
+# DANGER: the user's text becomes part of the SQL
+db.execute(f"SELECT * FROM customers WHERE name = '{name}'")
+
+# SAFE: ? is a placeholder. The database treats the text as a value, never as SQL
+db.execute("SELECT * FROM customers WHERE name = ?", (name,))
+```
+
+Someone types `' OR '1'='1` as the name. The dangerous line then runs this (try it in DB Browser):
+
+```sql
+SELECT * FROM customers WHERE name = '' OR '1'='1';
+```
+
+`'1'='1'` is always true, so they get **all 5 customers**, not one. With the safe line, the database looks for a customer really called `' OR '1'='1` and finds no one. Attackers use the same trick to read passwords or delete tables.
+
+> **Coming in Session 3:** Django uses placeholders for you, so `Post.objects.filter(title=title)` is safe.
+
+### Secrets: passwords and connection strings
+
+An app connects to a real database with a **connection string**, and the password is inside it:
+
+```
+postgresql://shop_user:MyPassw0rd@db.example.com/shop
+```
+
+- Keep it in a `.env` file, and add `.env` to `.gitignore`. Never write it in your code.
+- Never paste it into a chat (an AI chat too), a screenshot or a GitHub issue.
+- If it leaks, **change the password at once**. Deleting the commit is not enough: copies may already exist.
+
+> **Coming in Session 4:** Django's `SECRET_KEY` moves into `.env` the same way.
+
+### Give each user only what they need
+
+| Who | Access |
+|---|---|
+| A report or dashboard | Read only (`SELECT`) |
+| The app | Read and write its own tables |
+| One admin | Everything, plus the backups |
+
+- **Ids in links are easy to guess.** If `/orders/4` shows an order, anyone can try `/orders/5`. The app must check who is logged in before it shows the order. Some apps also use long random text keys (UUIDs, like `9f1c2e7a-…`) in public links.
+- With **real company data (Odoo)**: practice on a copy, ask for a read-only user, and never change data without review and a backup.
+
+---
+
+## 12. SQL vs NoSQL
 
 Not every database uses tables. There are two big families.
 
@@ -356,7 +478,7 @@ Not every database uses tables. There are two big families.
 
 ---
 
-## 12. Practice
+## 13. Practice
 
 Try each question first, then click **Answer** to check.
 
@@ -471,7 +593,7 @@ Alexandria 725, Cairo 600, Giza 150.
 
 ---
 
-## 13. Mini-project: Order report
+## 14. Mini-project: Order report
 
 Use Part A (Python) and Part B (SQL) together. **Commit after each step.**
 
@@ -506,7 +628,7 @@ Paste one error message into Claude and ask: *"Explain this error in simple word
 
 ---
 
-## 14. Quick check
+## 15. Quick check
 
 Answer in your own words first, then click **Answer**.
 
@@ -554,6 +676,20 @@ WHERE orders.paid = 0
 GROUP BY customers.city;
 ```
 Alexandria 1200, Cairo 1000.
+</details>
+
+**6. What does an index do, and why not add one to every column?**
+
+<details><summary>Answer</summary>
+
+It lets the database jump straight to the matching rows (**SEARCH**) instead of reading every row (**SCAN**), like the index at the back of a book. But each index takes space and makes every `INSERT` and `UPDATE` a little slower, so add them only to the columns you often search or join on.
+</details>
+
+**7. Why is `f"SELECT * FROM customers WHERE name = '{name}'"` dangerous? What do you write instead?**
+
+<details><summary>Answer</summary>
+
+The user's text becomes part of the SQL, so typing `' OR '1'='1` returns every customer (SQL injection). Use a placeholder instead: `db.execute("SELECT * FROM customers WHERE name = ?", (name,))`.
 </details>
 
 ---
