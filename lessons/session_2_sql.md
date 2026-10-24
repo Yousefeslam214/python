@@ -441,6 +441,8 @@ postgresql://shop_user:MyPassw0rd@db.example.com/shop
 
 Not every database uses tables. There are two big families.
 
+![SQL saves Sara once and each order points to her id. NoSQL saves a copy of Sara inside every order document](images/sql/05-sql-vs-nosql.png)
+
 **SQL:** the data is split into tables and linked by ids, like our practice database.
 
 | orders.id | customer_id | product | amount | paid |
