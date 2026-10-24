@@ -2,13 +2,15 @@
 
 **Goal:** understand how business data is stored, and answer business questions with `SELECT`, `WHERE`, `JOIN` and `GROUP BY`.
 
-**Time:** about 70 minutes · **Tool:** DB Browser for SQLite (free)
+**Time:** about 70 minutes, plus 15 for the quick topics (or do them at home) · **Tool:** DB Browser for SQLite (free)
 
 ---
 
 ## 1. The idea
 
 A database stores data in **tables**. A table looks like an Excel sheet.
+
+Every business system (Odoo, an online shop, a bank) keeps its data in tables like these. With SQL you can answer your own business questions in seconds, instead of waiting for someone to build a report.
 
 | Word | Meaning |
 |---|---|
@@ -150,7 +152,9 @@ GROUP BY product;
 
 ## 7. From a business question to SQL
 
-Before you write SQL, answer **3 questions**:
+Managers don't ask for SQL. They ask questions like *"How much did we sell?"* or *"Who still owes us money?"* Your job is to turn the question into SQL, in 3 steps.
+
+**Step 1. Answer 3 questions first:**
 
 1. **What** data do I need?
 2. **Where** is it? Which tables?
@@ -161,6 +165,20 @@ Before you write SQL, answer **3 questions**:
 > 2. **Where:** `orders` and `customers`
 > 3. **How:** `orders.customer_id = customers.id`
 
+**Step 2. Spot the pattern.** Most business questions sound like one of these:
+
+| The question sounds like… | Use | Example |
+|---|---|---|
+| "How much…?" · "How many…?" | `SUM()` · `COUNT()` | Total sales |
+| "…per city? per product? per customer?" | `GROUP BY` | Sales per city |
+| "Only the unpaid ones" · "only Cairo" | `WHERE` | Unpaid orders |
+| "Who is the top…?" · "the best 3…?" | `ORDER BY … DESC` + `LIMIT` | Biggest customer |
+| "…with the customer's name?" | `JOIN` | Orders with names |
+| "Who has never…?" | `LEFT JOIN` (section 8) | Customers with no orders |
+
+**Step 3. Write the SQL**, with the parts in this order:
+`SELECT` → `FROM` → `JOIN … ON` → `WHERE` → `GROUP BY` → `HAVING` → `ORDER BY` → `LIMIT`
+
 ```sql
 SELECT SUM(orders.amount) AS cairo_unpaid
 FROM orders
@@ -170,12 +188,112 @@ WHERE customers.city = 'Cairo' AND orders.paid = 0;
 
 Result: **1000** (Ahmed 300 + Mona 700)
 
-**The parts always come in this order:**
-`SELECT` → `FROM` → `JOIN … ON` → `WHERE` → `GROUP BY` → `ORDER BY` → `LIMIT`
+### The weekly dashboard: 4 numbers every manager asks for
+
+| Business word | Meaning | Our shop |
+|---|---|---|
+| **Revenue** | All the money from all orders | 4000 |
+| **Orders** | How many orders | 7 |
+| **Average order value** | Revenue ÷ orders | 571.43 |
+| **Unpaid (receivables)** | Money customers still owe us | 2200 |
+
+```sql
+SELECT SUM(amount)           AS revenue,
+       COUNT(*)              AS orders,
+       ROUND(AVG(amount), 2) AS average_order_value
+FROM orders;
+
+SELECT SUM(amount) AS unpaid FROM orders WHERE paid = 0;
+```
+
+> **Link to Odoo:** **Sales → Reporting** in Odoo shows numbers like these. SQL lets you ask your own questions too.
 
 ---
 
-## 8. Common errors
+## 8. Quick topics: 7 small tools for more business questions
+
+Each tool answers one more kind of question. Teach them fast, or try them at home.
+
+**1. `DISTINCT`: remove repeats.** *"Which cities are our customers in?"*
+
+```sql
+SELECT DISTINCT city FROM customers;
+```
+
+3 cities (Cairo, Alexandria, Giza), not 5 rows.
+
+**2. `IN`: any value from a list.** *"Show the laptop and monitor orders."*
+
+```sql
+SELECT * FROM orders WHERE product IN ('Laptop', 'Monitor');
+```
+
+Orders 1, 2, 5 and 7. It's a short way to write `product = 'Laptop' OR product = 'Monitor'`.
+
+**3. `BETWEEN`: a range, great for dates.** *"Which orders came in the first half of September?"*
+
+```sql
+SELECT * FROM orders WHERE order_date BETWEEN '2026-09-01' AND '2026-09-15';
+```
+
+Orders 1 to 6. `BETWEEN` includes both ends.
+
+**4. `LIKE`: search inside text.** *"Which products start with M?"*
+
+```sql
+SELECT DISTINCT product FROM orders WHERE product LIKE 'M%';
+```
+
+Monitor and Mouse. `%` means "any letters": `'M%'` starts with M, and `'%top'` ends with "top" (Laptop).
+
+**5. `HAVING`: filter the groups.** *"Which customers ordered more than once?"* (our repeat customers)
+
+```sql
+SELECT customers.name, COUNT(*) AS orders
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+GROUP BY customers.name
+HAVING COUNT(*) > 1;
+```
+
+Ahmed, Mona and Sara, with 2 orders each. `WHERE` filters rows **before** grouping. `HAVING` filters the groups **after**.
+
+**6. `CASE`: your own labels.** *"Show Paid and Unpaid instead of 1 and 0."*
+
+```sql
+SELECT id, amount, CASE WHEN paid = 1 THEN 'Paid' ELSE 'Unpaid' END AS status
+FROM orders;
+```
+
+Business bonus: *"What % of our sales is already paid?"* (the collection rate)
+
+```sql
+SELECT ROUND(SUM(CASE WHEN paid = 1 THEN amount ELSE 0 END) * 100.0 / SUM(amount), 1) AS paid_percent
+FROM orders;
+```
+
+**45.0**: 1800 of the 4000 is paid. Write `100.0`, not `100`, to keep the decimals.
+
+**7. `LEFT JOIN`: find what's missing.** *"Which customers have never ordered?"*
+
+```sql
+SELECT customers.name
+FROM customers
+LEFT JOIN orders ON orders.customer_id = customers.id
+WHERE orders.id IS NULL;
+```
+
+**Khaled.** `JOIN` keeps only the matches. `LEFT JOIN` keeps every customer and leaves the order empty (`NULL`) when there is none. Business use: a list of customers to call.
+
+> **Big tables (like Odoo's): keep queries fast**
+> - Ask only for the columns you need, not `*`.
+> - Add `LIMIT 20` while you explore.
+> - Filter with `WHERE`, so you get back only the rows you need.
+> - Searching by `id` is fast: the primary key has an **index**, like the index at the back of a book.
+
+---
+
+## 9. Common errors
 
 Read the error like a Python traceback, fix **one** thing, and run again.
 
@@ -189,7 +307,7 @@ Read the error like a Python traceback, fix **one** thing, and run again.
 
 ---
 
-## 9. Safety
+## 10. Safety
 
 - `SELECT` only **reads** data. It is always safe.
 - `UPDATE` and `DELETE` **change** data. `DELETE FROM orders;` deletes **every** order.
@@ -197,7 +315,7 @@ Read the error like a Python traceback, fix **one** thing, and run again.
 
 ---
 
-## 10. SQL vs NoSQL
+## 11. SQL vs NoSQL
 
 Not every database uses tables. There are two big families.
 
@@ -232,13 +350,13 @@ Not every database uses tables. There are two big families.
 >
 > **Link to Part A:** the `orders` list in `main.py` and the JSON in `lesson_3_toolkit.py` (section 5) already look like NoSQL documents.
 
-> **Coming in Session 3:** in Django you write `Post.objects.filter(status="draft")`, and Django runs `SELECT … WHERE status = 'draft'` for you.
+> **Coming in Session 3:** in Django you write `Post.objects.filter(id=2)`, and Django runs `SELECT … WHERE id = 2` for you.
 >
 > **Coming in Session 5:** a third kind, the **vector database**, finds text by meaning. AI uses it to search your documents.
 
 ---
 
-## 11. Practice
+## 12. Practice
 
 Try each question first, then click **Answer** to check.
 
@@ -325,9 +443,35 @@ LIMIT 1;
 Mona, with 1600.
 </details>
 
+**8. Business: which products bring in the most money? Biggest first.**
+
+<details><summary>Answer</summary>
+
+```sql
+SELECT product, SUM(amount) AS revenue
+FROM orders
+GROUP BY product
+ORDER BY revenue DESC;
+```
+Monitor 1900, Laptop 1400, Mouse 550, Keyboard 150.
+</details>
+
+**9. Business: what is the average order value in each city?**
+
+<details><summary>Answer</summary>
+
+```sql
+SELECT customers.city, ROUND(AVG(orders.amount), 2) AS average_order_value
+FROM orders
+JOIN customers ON orders.customer_id = customers.id
+GROUP BY customers.city;
+```
+Alexandria 725, Cairo 600, Giza 150.
+</details>
+
 ---
 
-## 12. Mini-project: Order report
+## 13. Mini-project: Order report
 
 Use Part A (Python) and Part B (SQL) together. **Commit after each step.**
 
@@ -362,7 +506,7 @@ Paste one error message into Claude and ask: *"Explain this error in simple word
 
 ---
 
-## 13. Quick check
+## 14. Quick check
 
 Answer in your own words first, then click **Answer**.
 
