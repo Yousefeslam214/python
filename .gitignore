@@ -18,6 +18,9 @@ db.sqlite3
 
 # Files made by running the lessons
 output/
+my-projects/
+practice.db
+*.db
 
 # OS
 .DS_Store
